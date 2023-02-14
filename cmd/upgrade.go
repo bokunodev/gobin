@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -13,9 +14,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var reinstallCmd = &cobra.Command{
-	Use:   "reinstall exe",
-	Short: "Reinstall a package",
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade exe",
+	Short: "Upgrade installed package",
 	Args:  cobra.ExactArgs(1),
 	Run: func(c *cobra.Command, args []string) {
 		conf, err := loadconfig()
@@ -25,13 +26,30 @@ var reinstallCmd = &cobra.Command{
 
 		mod, ok := conf.Modules[args[0]]
 		if !ok {
-			log.Fatalf("%q was not installed with gobin", args[0])
+			log.Fatalf("%q was not installed with gobin\n", args[0])
 		}
 
-		cmd := exec.Command("go", append(prepend(conf.BuildFlags, "install"),
-			strings.Join([]string{mod.Pkg, mod.Tag}, "@"))...)
+		curMod, err := pkginfo(strings.Join([]string{mod.Path, mod.Version}, "@"))
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		if ok, _ := c.Flags().GetBool("debug"); ok {
+		if curMod.Update == nil {
+			fmt.Printf("no newer version available for %q\n", args[0])
+			return
+		}
+
+		goargs := []string{"install"}
+		goargs = append(goargs, conf.BuildFlags...)
+		goargs = append(goargs,
+			strings.Join([]string{
+				curMod.Update.Path,
+				curMod.Update.Version,
+			}, "@"))
+
+		cmd := exec.Command("go", goargs...)
+
+		if ok, _ := c.InheritedFlags().GetBool("debug"); ok {
 			log.Println(cmd.String())
 		}
 
@@ -44,7 +62,7 @@ var reinstallCmd = &cobra.Command{
 			log.Fatal(cmd.ProcessState.String(), code)
 		}
 
-		conf.Modules[args[0]] = mod
+		conf.Modules[args[0]] = curMod
 		p, err := json.MarshalIndent(conf, "", "\t")
 		if err != nil {
 			log.Fatal(err)
@@ -57,5 +75,5 @@ var reinstallCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(reinstallCmd)
+	rootCmd.AddCommand(upgradeCmd)
 }

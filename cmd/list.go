@@ -15,6 +15,7 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List installed packages",
+	Args:  cobra.ExactArgs(0),
 	Run: func(_ *cobra.Command, _ []string) {
 		conf, err := loadconfig()
 		if err != nil {
@@ -23,10 +24,15 @@ var listCmd = &cobra.Command{
 
 		tw := tabwriter.NewWriter(os.Stdout, 0, 4, 1, ' ', tabwriter.DiscardEmptyColumns)
 
-		fmt.Fprintf(tw, "Exe\t|\tPkg\t|\tTag\n")
-		fmt.Fprintf(tw, "----------\t|\t----------\t|\t----------\n")
-		for k, v := range conf.Modules {
-			if _, err = fmt.Fprintf(tw, "%s\t|\t%s\t|\t%s\n", k, v.Pkg, v.Tag); err != nil {
+		fmt.Fprintf(tw, "package\t|\tpath\t|\tversion\t|\tupdate\n")
+		fmt.Fprintf(tw, "----------\t|\t----------\t|\t----------\t|\t----------\n")
+		for pkg, mod := range conf.Modules {
+			newerVersion := "-"
+			if mod.Update != nil {
+				newerVersion = mod.Update.Version
+			}
+
+			if _, err = fmt.Fprintf(tw, "%s\t|\t%s\t|\t%s\t|\t%s\n", pkg, mod.Path, mod.Version, newerVersion); err != nil {
 				log.Fatal(err)
 			}
 		}

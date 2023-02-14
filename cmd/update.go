@@ -5,35 +5,42 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-var removeCmd = &cobra.Command{
-	Use:   "remove exe",
-	Short: "Remove installed package",
+var updateCmd = &cobra.Command{
+	Use:   "update pkg",
+	Short: "Check for newer version",
 	Args:  cobra.ExactArgs(1),
 	Run: func(_ *cobra.Command, args []string) {
-		binpath := gobin()
-
 		conf, err := loadconfig()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if _, ok := conf.Modules[args[0]]; !ok {
+		mod, ok := conf.Modules[args[0]]
+		if !ok {
 			log.Fatalf("%q was not installed with gobin\n", args[0])
 		}
 
-		if err = os.Remove(filepath.Join(binpath, args[0])); err != nil {
+		curMod, err := pkginfo(strings.Join([]string{mod.Path, mod.Version}, "@"))
+		if err != nil {
 			log.Fatal(err)
 		}
 
-		delete(conf.Modules, args[0])
+		if curMod.Update == nil {
+			fmt.Printf("no newer version available for %q\n", args[0])
+			return
+		}
 
+		fmt.Printf("%s %s => %s\n", curMod.Path, curMod.Version, curMod.Update.Version)
+
+		conf.Modules[args[0]] = curMod
 		p, err := json.MarshalIndent(conf, "", "\t")
 		if err != nil {
 			log.Fatal(err)
@@ -46,5 +53,5 @@ var removeCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(removeCmd)
+	rootCmd.AddCommand(updateCmd)
 }

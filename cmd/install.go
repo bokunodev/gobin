@@ -14,7 +14,7 @@ import (
 )
 
 var installCmd = &cobra.Command{
-	Use:   "install git.tld/org/mod/v2/cmd/pkg@tag",
+	Use:   "install host.tld/org/mod/v2/cmd/pkg@tag",
 	Short: "Install a package",
 	Args:  cobra.ExactArgs(1),
 	Run: func(c *cobra.Command, args []string) {
@@ -33,10 +33,20 @@ var installCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		cmd := exec.Command("go", append(prepend(conf.BuildFlags, "install"),
-			strings.Join([]string{pkg, tag}, "@"))...)
+		pkgtag := strings.Join([]string{pkg, tag}, "@")
 
-		if ok, _ := c.Flags().GetBool("debug"); ok {
+		mod, err := pkginfo(pkgtag)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		goargs := []string{"install"}
+		goargs = append(goargs, conf.BuildFlags...)
+		goargs = append(goargs, pkgtag)
+
+		cmd := exec.Command("go", goargs...)
+
+		if ok, _ := c.InheritedFlags().GetBool("debug"); ok {
 			log.Println(cmd.String())
 		}
 
@@ -49,7 +59,7 @@ var installCmd = &cobra.Command{
 			log.Fatal(cmd.ProcessState.String(), code)
 		}
 
-		conf.Modules[exe] = module{Pkg: pkg, Tag: tag}
+		conf.Modules[exe] = mod
 		p, err := json.MarshalIndent(conf, "", "\t")
 		if err != nil {
 			log.Fatal(err)

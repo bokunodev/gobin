@@ -22,5 +22,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().Bool("debug", false, "Log generated `go install` command")
+	rootCmd.PersistentFlags().Bool("debug", false, "Log the generated command")
 }
