@@ -62,6 +62,9 @@ var upgradeCmd = &cobra.Command{
 			log.Fatal(cmd.ProcessState.String(), code)
 		}
 
+		curMod.Version = curMod.Update.Version
+		curMod.Update = nil
+
 		conf.Modules[args[0]] = curMod
 		p, err := json.MarshalIndent(conf, "", "\t")
 		if err != nil {
