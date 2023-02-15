@@ -2,35 +2,16 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"go/build"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 )
-
-/*
-	{
-		"Path": "github.com/urfave/cli/v2",
-		"Version": "v2.23.6",
-		"Time": "2022-12-02T14:14:14Z",
-		"Update": {
-			"Path": "github.com/urfave/cli/v2",
-			"Version": "v2.24.3",
-			"Time": "2023-02-01T14:23:16Z"
-		},
-		"GoMod": "/home/boku/.go/pkg/mod/cache/download/github.com/urfave/cli/v2/@v/v2.23.6.mod",
-		"GoVersion": "1.18",
-		"Origin": {
-		"VCS": "git",
-		"URL": "https://github.com/urfave/cli",
-		"Ref": "refs/tags/v2.23.6",
-		"Hash": "f9652e31767f6bbddb654468654fd42473a9eec0"
-		}
-	}
-*/
 
 type module struct {
 	Path      string    `json:"Path,omitempty"`
@@ -92,11 +73,22 @@ func gobin() string {
 	return gobin
 }
 
-func pkginfo(pkg string) (module, error) {
+func pkginfo(pkg, tag string) (module, error) {
 	m := module{}
 
-	cmd := exec.Command("go", "list", "-u", "-m", "-json", pkg)
+	pkgpath := pkg
+
+begin:
+	cmd := exec.Command("go", "list", "-u", "-m", "-json",
+		strings.Join([]string{pkgpath, tag}, "@"))
 	p, err := cmd.CombinedOutput()
+	if cmd.ProcessState.ExitCode() != 0 {
+		pkgpath = path.Dir(pkgpath)
+		if pkgpath == "." {
+			return m, fmt.Errorf(`not found: module %s: no matching versions for query "%s"`, pkg, tag)
+		}
+		goto begin
+	}
 	if err != nil {
 		return m, err
 	}

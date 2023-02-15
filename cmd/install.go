@@ -33,16 +33,14 @@ var installCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		pkgtag := strings.Join([]string{pkg, tag}, "@")
-
-		mod, err := pkginfo(pkgtag)
+		mod, err := pkginfo(pkg, tag)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		goargs := []string{"install"}
 		goargs = append(goargs, conf.BuildFlags...)
-		goargs = append(goargs, pkgtag)
+		goargs = append(goargs, strings.Join([]string{pkg, tag}, "@"))
 
 		cmd := exec.Command("go", goargs...)
 
@@ -50,6 +48,7 @@ var installCmd = &cobra.Command{
 			log.Println(cmd.String())
 		}
 
+		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err = cmd.Run(); err != nil {
 			log.Fatal(err)

@@ -29,7 +29,7 @@ var upgradeCmd = &cobra.Command{
 			log.Fatalf("%q was not installed with gobin\n", args[0])
 		}
 
-		curMod, err := pkginfo(strings.Join([]string{mod.Path, mod.Version}, "@"))
+		curMod, err := pkginfo(mod.Path, mod.Version)
 		if err != nil {
 			log.Fatal(err)
 		}
