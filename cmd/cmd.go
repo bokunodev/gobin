@@ -14,6 +14,7 @@ import (
 )
 
 type module struct {
+	RealPath  string    `json:"RealPath,omitempty"`
 	Path      string    `json:"Path,omitempty"`
 	Version   string    `json:"Version,omitempty"`
 	Time      time.Time `json:"Time,omitempty"`
