@@ -32,7 +32,7 @@ var listCmd = &cobra.Command{
 				newerVersion = mod.Update.Version
 			}
 
-			if _, err = fmt.Fprintf(tw, "%s\t|\t%s\t|\t%s\t|\t%s\n", pkg, mod.Path, mod.Version, newerVersion); err != nil {
+			if _, err = fmt.Fprintf(tw, "%s\t|\t%s\t|\t%s\t|\t%s\n", pkg, mod.RealPath, mod.Version, newerVersion); err != nil {
 				log.Fatal(err)
 			}
 		}
